@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Check, AlertCircle, Loader, Zap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import API from '../../api/axiosInstance';
 
 interface FormState {
   email: string;
@@ -18,6 +20,8 @@ const Login: React.FC = () => {
     status: 'idle',
     message: '',
   });
+
+  const {login}=useAuth()
 
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -56,17 +60,36 @@ const Login: React.FC = () => {
     setFormState({ ...formState, status: 'loading' });
 
     // Mock API authentication delay
-    setTimeout(() => {
+   try{
+        const response = await API.post('/auth/login',{
+            email : formState.email,
+            password : formState.password
+        })
+
+        const { token, user } = response.data;
+        login(token, user);
+       
+        if(response.status === 200){
+              setTimeout(() => {
       setFormState({
         ...formState,
         status: 'success',
-        message: 'Authentication successful! Redirecting...',
+        message: 'Login successful! Redirecting...',
       });
 
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 1500);
     }, 1500);
+        }else{
+            setFormState({ ...formState, status: 'error', message: 'Invalid email or password. Please try again.' });
+        }
+
+   }
+   catch(error){
+     console.error('Login error:', error);
+        setFormState({ ...formState, status: 'error', message: 'An unexpected error occurred. Please try again.' });
+   }
   };
 
   const isEmailValid = formState.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email);

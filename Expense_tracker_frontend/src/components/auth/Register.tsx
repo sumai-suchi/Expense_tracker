@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check, AlertCircle, Loader, Zap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import API from '../../api/axiosInstance';
+import { useAuth } from '../../context/AuthContext';
 
 interface FormState {
   fullName: string;
@@ -20,6 +22,11 @@ interface PasswordStrength {
 }
 
 const Register: React.FC = () => {
+
+    const {register}=useAuth()
+
+
+
   const [formState, setFormState] = useState<FormState>({
     fullName: '',
     email: '',
@@ -29,6 +36,8 @@ const Register: React.FC = () => {
     status: 'idle',
     message: '',
   });
+
+
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -100,22 +109,67 @@ const Register: React.FC = () => {
 
     setFormState({ ...formState, status: 'loading' });
 
-    setTimeout(() => {
-      setFormState({
-        fullName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        agreeToTerms: false,
-        status: 'success',
-        message: 'Account created successfully! Redirecting...',
-      });
+    // Simulate API call
 
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 2000);
-    }, 2000);
-  };
+    console.log(formState);
+
+     try{
+        // const response = await fetch('http://localhost:5000/api/auth/register', {
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        //   body: JSON.stringify({
+        //     name: formState.fullName,
+        //     email: formState.email,
+        //     password: formState.password,
+        //   }),
+        // });
+
+        const response = await API.post('/auth/register', {
+          name: formState.fullName,
+          email: formState.email,
+          password: formState.password,
+        });
+
+      console.log('API Response:', response);
+       register(response.data.token, response.data.user);
+
+        const data = response.data;
+
+        if (data.user) {
+          setFormState({
+            fullName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            agreeToTerms: false,
+            status: 'success',
+            message: 'Account created successfully! Redirecting...',
+          });
+
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+        } else {
+          setFormState({
+            ...formState,
+            status: 'error',
+            message: data.message,
+          });
+        }
+      } catch (error) {
+        setFormState({
+          ...formState,
+          status: 'error',
+          message: 'An error occurred while creating your account. Please try again.',
+        });
+      }
+          }
+   
+
+   
+ 
 
   const isEmailValid = formState.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email);
 
